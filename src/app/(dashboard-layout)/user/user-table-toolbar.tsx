@@ -29,12 +29,14 @@ interface UserTableToolbarProps {
   table: Table<User>;
   globalFilter: string;
   onGlobalFilterChange: (value: string) => void;
+  isLoading?: boolean;
 }
 
 export function UserTableToolbar({
   table,
   globalFilter,
   onGlobalFilterChange,
+  isLoading = false,
 }: UserTableToolbarProps) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -42,10 +44,11 @@ export function UserTableToolbar({
         <div className="relative flex-1 md:max-w-sm">
           <IconSearch className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
           <Input
-            placeholder="Search users..."
+            placeholder="Search by email or name..."
             value={globalFilter ?? ""}
             onChange={(event) => onGlobalFilterChange(event.target.value)}
             className="pl-9"
+            disabled={isLoading}
           />
         </div>
         <div className="flex items-center gap-2" suppressHydrationWarning>

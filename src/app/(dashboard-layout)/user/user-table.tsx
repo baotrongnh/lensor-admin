@@ -8,11 +8,11 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
   VisibilityState,
+  PaginationState,
 } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -26,16 +26,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { columns } from "./user-columns";
-import { User } from "./user-schema";
+import { User, transformApiUser } from "./user-schema";
 import { UserTablePagination } from "./user-table-pagination";
 import { UserTableToolbar } from "./user-table-toolbar";
+import { UserService } from "@/services/user.service";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface UserTableProps {
-  data: User[];
-}
-
-export function UserTable({ data: initialData }: UserTableProps) {
-  const [data] = React.useState(() => initialData);
+export function UserTable() {
+  const [data, setData] = React.useState<User[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -43,15 +42,118 @@ export function UserTable({ data: initialData }: UserTableProps) {
     []
   );
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState({
+  const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 50,
   });
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [totalRows, setTotalRows] = React.useState(0);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [isSearching, setIsSearching] = React.useState(false);
+
+  // Fetch users data
+  const fetchUsers = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const page = pagination.pageIndex + 1;
+      const limit = pagination.pageSize;
+
+      const response = await UserService.getAllUsers(page, limit);
+      const users = response.data.users.map(transformApiUser);
+
+      setData(users);
+      setTotalRows(response.data.pagination?.total || users.length);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      toast.error("Failed to load users", {
+        description:
+          error instanceof Error ? error.message : "Please try again later",
+      });
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.pageIndex, pagination.pageSize]);
+
+  // Search users
+  const handleSearch = React.useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchQuery("");
+      setIsSearching(false);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      setSearchQuery(query);
+
+      const response = await UserService.searchUsers(query, 100);
+      const users = response.data.map(transformApiUser);
+
+      setData(users);
+      setTotalRows(users.length);
+    } catch (error) {
+      console.error("Failed to search users:", error);
+      toast.error("Search failed", {
+        description:
+          error instanceof Error ? error.message : "Please try again",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounce search
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (globalFilter) {
+        handleSearch(globalFilter);
+      } else {
+        setSearchQuery("");
+        fetchUsers();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [globalFilter, handleSearch, fetchUsers]);
+
+  // Initial fetch and pagination changes
+  React.useEffect(() => {
+    if (!searchQuery) {
+      fetchUsers();
+    }
+  }, [fetchUsers, searchQuery]);
+
+  // Handle delete users
+  const handleDeleteUsers = async (userIds: string[]) => {
+    try {
+      const result = await UserService.deleteUsers(userIds);
+
+      if (result.success) {
+        toast.success(`Successfully deleted ${result.deleted} user(s)`);
+        setRowSelection({});
+        fetchUsers();
+      } else {
+        toast.warning(
+          `Deleted ${result.deleted} out of ${userIds.length} user(s)`
+        );
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error("Failed to delete users:", error);
+      toast.error("Failed to delete users", {
+        description:
+          error instanceof Error ? error.message : "Please try again",
+      });
+    }
+  };
+
+  const rowCount = searchQuery ? data.length : totalRows;
 
   const table = useReactTable({
     data,
     columns,
+    rowCount,
     state: {
       sorting,
       columnVisibility,
@@ -60,7 +162,7 @@ export function UserTable({ data: initialData }: UserTableProps) {
       pagination,
       globalFilter,
     },
-    getRowId: (row) => row.id.toString(),
+    getRowId: (row) => row.id,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
@@ -70,10 +172,13 @@ export function UserTable({ data: initialData }: UserTableProps) {
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    manualPagination: !searchQuery, // Use manual pagination for API calls
+    meta: {
+      refreshData: fetchUsers,
+    },
   });
 
   const selectedRowsCount = table.getFilteredSelectedRowModel().rows.length;
@@ -85,6 +190,7 @@ export function UserTable({ data: initialData }: UserTableProps) {
         table={table}
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
+        isLoading={loading || isSearching}
       />
 
       {/* Selected Rows Actions */}
@@ -107,14 +213,15 @@ export function UserTable({ data: initialData }: UserTableProps) {
               variant="destructive"
               size="sm"
               onClick={() => {
+                const selectedIds = table
+                  .getFilteredSelectedRowModel()
+                  .rows.map((row) => row.original.id);
+
                 toast.error(`Delete ${selectedRowsCount} user(s)?`, {
                   description: "This action cannot be undone.",
                   action: {
                     label: "Delete",
-                    onClick: () => {
-                      toast.success("Users deleted");
-                      setRowSelection({});
-                    },
+                    onClick: () => handleDeleteUsers(selectedIds),
                   },
                 });
               }}
@@ -147,7 +254,18 @@ export function UserTable({ data: initialData }: UserTableProps) {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  {columns.map((_, cellIndex) => (
+                    <TableCell key={cellIndex}>
+                      <Skeleton className="h-8 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -178,7 +296,7 @@ export function UserTable({ data: initialData }: UserTableProps) {
       </div>
 
       {/* Pagination */}
-      <UserTablePagination table={table} />
+      <UserTablePagination table={table} totalRows={rowCount} />
     </div>
   );
 }

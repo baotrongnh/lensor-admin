@@ -169,7 +169,17 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <UserTableActions user={row.original} />,
+    cell: ({ row, table }) => {
+      // Access the table's meta to get the refresh function
+      const meta = table.options.meta as { refreshData?: () => void } | undefined;
+      return (
+        <UserTableActions 
+          user={row.original} 
+          onUserDeleted={meta?.refreshData}
+          onUserUpdated={meta?.refreshData}
+        />
+      );
+    },
   },
 ];
 

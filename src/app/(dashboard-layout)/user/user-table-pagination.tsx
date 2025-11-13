@@ -21,14 +21,19 @@ import { User } from "./user-schema";
 
 interface UserTablePaginationProps {
   table: Table<User>;
+  totalRows?: number;
 }
 
-export function UserTablePagination({ table }: UserTablePaginationProps) {
+export function UserTablePagination({ table, totalRows }: UserTablePaginationProps) {
+  const pageCount = totalRows 
+    ? Math.ceil(totalRows / table.getState().pagination.pageSize)
+    : table.getPageCount();
+    
   return (
     <div className="flex items-center justify-between">
       <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
         {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
+        {totalRows ?? table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
       <div className="flex w-full items-center gap-8 lg:w-fit">
         <div className="hidden items-center gap-2 lg:flex" suppressHydrationWarning>
@@ -47,7 +52,7 @@ export function UserTablePagination({ table }: UserTablePaginationProps) {
               />
             </SelectTrigger>
             <SelectContent side="top">
-              {[10, 20, 30, 40, 50].map((pageSize) => (
+              {[10, 20, 30, 50, 100].map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>
                   {pageSize}
                 </SelectItem>
@@ -57,7 +62,7 @@ export function UserTablePagination({ table }: UserTablePaginationProps) {
         </div>
         <div className="flex w-fit items-center justify-center text-sm font-medium">
           Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+          {pageCount}
         </div>
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           <Button
@@ -94,7 +99,7 @@ export function UserTablePagination({ table }: UserTablePaginationProps) {
             variant="outline"
             className="hidden size-8 lg:flex"
             size="icon"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            onClick={() => table.setPageIndex(pageCount - 1)}
             disabled={!table.getCanNextPage()}
           >
             <span className="sr-only">Go to last page</span>
