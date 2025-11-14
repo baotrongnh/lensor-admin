@@ -22,6 +22,7 @@ import { User } from "./user-schema";
 import { UserService } from "@/services/user.service";
 import { UserDetailsModal } from "./user-details-modal";
 import { UserStatsModal } from "./user-stats-modal";
+import { UserEditModal } from "./user-edit-modal";
 
 interface UserTableActionsProps {
   user: User;
@@ -32,6 +33,7 @@ interface UserTableActionsProps {
 export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTableActionsProps) {
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   const [showStatsModal, setShowStatsModal] = React.useState(false);
+  const [showEditModal, setShowEditModal] = React.useState(false);
 
   const handleDelete = async () => {
     try {
@@ -52,6 +54,10 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
 
   const handleViewStats = () => {
     setShowStatsModal(true);
+  };
+
+  const handleEditUser = () => {
+    setShowEditModal(true);
   };
 
   return (
@@ -78,12 +84,7 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
             <IconEye className="mr-2 size-4" />
             View Statistics
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              toast.info(`Edit functionality coming soon`);
-              // You can implement a modal or navigate to edit page here
-            }}
-          >
+          <DropdownMenuItem onClick={handleEditUser}>
             <IconEdit className="mr-2 size-4" />
             Edit User
           </DropdownMenuItem>
@@ -121,6 +122,14 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
         userAvatar={user.avatar}
         open={showStatsModal}
         onOpenChange={setShowStatsModal}
+      />
+
+      {/* User Edit Modal */}
+      <UserEditModal
+        userId={user.id}
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onUserUpdated={onUserUpdated}
       />
     </>
   );
