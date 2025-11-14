@@ -59,10 +59,10 @@ export function PostTable() {
       const limit = pagination.pageSize;
 
       const response = await PostService.getAllPosts(page, limit);
-      const posts = response.data.posts.map(transformApiPost);
+      const posts = response.data.map(transformApiPost);
 
       setData(posts);
-      setTotalRows(response.data.pagination?.total || posts.length);
+      setTotalRows(posts.length);
     } catch (error) {
       console.error("Failed to fetch posts:", error);
       toast.error("Failed to load posts", {
@@ -193,44 +193,6 @@ export function PostTable() {
         isLoading={loading || isSearching}
       />
 
-      {/* Selected Rows Actions */}
-      {selectedRowsCount > 0 && (
-        <div className="bg-muted/50 flex items-center justify-between rounded-lg border px-4 py-3">
-          <div className="text-sm font-medium">
-            {selectedRowsCount} post(s) selected
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                toast.success(`Exported ${selectedRowsCount} post(s)`);
-              }}
-            >
-              Export
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                const selectedIds = table
-                  .getFilteredSelectedRowModel()
-                  .rows.map((row) => row.original.id);
-
-                toast.error(`Delete ${selectedRowsCount} post(s)?`, {
-                  description: "This action cannot be undone.",
-                  action: {
-                    label: "Delete",
-                    onClick: () => handleDeletePosts(selectedIds),
-                  },
-                });
-              }}
-            >
-              Delete Selected
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Table */}
       <div className="overflow-hidden rounded-lg border">

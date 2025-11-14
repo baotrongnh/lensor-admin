@@ -77,31 +77,11 @@ export function PostStatsModal({
         ) : stats ? (
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
-              {/* Total Views */}
-              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                    Lượt xem
-                  </CardTitle>
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <IconEye className="size-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                    {stats.totalViews.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Tổng số lượt xem
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Total Likes */}
+              {/* Vote Count */}
               <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-red-600 dark:text-red-400">
-                    Lượt thích
+                    Lượt vote
                   </CardTitle>
                   <div className="p-2 bg-red-500/10 rounded-lg">
                     <IconHeart className="size-5 text-red-600 dark:text-red-400" />
@@ -109,15 +89,15 @@ export function PostStatsModal({
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-red-700 dark:text-red-300">
-                    {stats.totalLikes.toLocaleString()}
+                    {stats.voteCount.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Tổng số lượt thích
+                    Tổng số vote
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Total Comments */}
+              {/* Comment Count */}
               <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-green-600 dark:text-green-400">
@@ -129,7 +109,7 @@ export function PostStatsModal({
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-700 dark:text-green-300">
-                    {stats.totalComments.toLocaleString()}
+                    {stats.commentCount.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Tổng số bình luận
@@ -137,7 +117,27 @@ export function PostStatsModal({
                 </CardContent>
               </Card>
 
-              {/* Total Shares */}
+              {/* View Count */}
+              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    Lượt xem
+                  </CardTitle>
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <IconEye className="size-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                    {stats.viewCount.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tổng số lượt xem
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Share Count */}
               <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium text-purple-600 dark:text-purple-400">
@@ -149,7 +149,7 @@ export function PostStatsModal({
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">
-                    {stats.totalShares.toLocaleString()}
+                    {stats.shareCount.toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Tổng số chia sẻ
