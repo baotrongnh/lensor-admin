@@ -131,10 +131,6 @@ export function UserTableToolbar({
               })}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button size="sm">
-          <IconPlus className="size-4" />
-          <span className="hidden lg:inline">Add User</span>
-        </Button>
       </div>
     </div>
   );

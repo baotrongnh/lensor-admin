@@ -51,29 +51,6 @@ export function PostTableToolbar({
             disabled={isLoading}
           />
         </div>
-        <div className="flex items-center gap-2" suppressHydrationWarning>
-          <Select
-            value={
-              (table.getColumn("status")?.getFilterValue() as string[])?.[0] ??
-              "all"
-            }
-            onValueChange={(value) => {
-              table
-                .getColumn("status")
-                ?.setFilterValue(value === "all" ? undefined : [value]);
-            }}
-          >
-            <SelectTrigger className="w-36" suppressHydrationWarning>
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Published">Published</SelectItem>
-              <SelectItem value="Draft">Draft</SelectItem>
-              <SelectItem value="Archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
       <div className="flex items-center gap-2">
         <DropdownMenu>
@@ -108,12 +85,7 @@ export function PostTableToolbar({
               })}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button size="sm">
-          <IconPlus className="size-4" />
-          <span className="hidden lg:inline">Add Post</span>
-        </Button>
       </div>
     </div>
   );
 }
-

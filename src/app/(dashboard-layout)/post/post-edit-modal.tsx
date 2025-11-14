@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { IconFileText, IconCategory, IconLoader2 } from "@tabler/icons-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
 import {
@@ -16,13 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PostService, ApiPost } from "@/services/post.service";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface PostEditModalProps {
   postId: string;
@@ -42,8 +35,6 @@ export function PostEditModal({
   const [formData, setFormData] = React.useState({
     title: "",
     content: "",
-    status: "Draft",
-    category: "",
   });
 
   React.useEffect(() => {
@@ -59,8 +50,6 @@ export function PostEditModal({
       setFormData({
         title: response.data.title || "",
         content: response.data.content || "",
-        status: response.data.status || "Draft",
-        category: response.data.category || "",
       });
     } catch (error) {
       toast.error("Failed to load post data");
@@ -87,8 +76,6 @@ export function PostEditModal({
       await PostService.updatePost(postId, {
         title: formData.title,
         content: formData.content,
-        status: formData.status,
-        category: formData.category,
       } as Partial<ApiPost>);
 
       toast.success("Post updated successfully");
@@ -134,34 +121,6 @@ export function PostEditModal({
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Draft">Draft</SelectItem>
-                    <SelectItem value="Published">Published</SelectItem>
-                    <SelectItem value="Archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  disabled={loading || submitting}
-                />
-              </div>
-            </div>
           </div>
 
           <DialogFooter>

@@ -5,28 +5,23 @@ export interface ApiPost {
   id: string;
   title: string;
   content: string;
-  authorId: string;
-  authorName: string;
-  authorAvatar?: string;
-  status: string;
-  category?: string;
-  views?: number;
-  likes?: number;
-  comments?: number;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  imageMetadata?: Record<string, any>;
+  voteCount: number;
+  isLiked: boolean;
+  commentCount: number;
   createdAt: string;
-  updatedAt: string;
-  publishedAt?: string;
+  user: {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    isFollowed: boolean;
+  };
 }
 
 export interface GetPostsResponse {
-  data: {
-    posts: ApiPost[];
-    pagination?: {
-      page: number;
-      limit: number;
-      total: number;
-    };
-  };
+  data: ApiPost[];
 }
 
 export interface SearchPostsResponse {
@@ -38,10 +33,10 @@ export interface GetPostResponse {
 }
 
 export interface PostStats {
-  totalViews: number;
-  totalLikes: number;
-  totalComments: number;
-  totalShares: number;
+  voteCount: number;
+  commentCount: number;
+  shareCount: number;
+  viewCount: number;
 }
 
 export interface GetPostStatsResponse {
@@ -65,21 +60,42 @@ export class PostService {
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
-    if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Request failed" }));
-      throw new Error(
-        error.message || `HTTP error! status: ${response.status}`
-      );
+      if (!response.ok) {
+        const error = await response
+          .json()
+          .catch(() => ({ message: "Request failed" }));
+        throw new Error(
+          error.message || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      return response.json();
+    } catch (error) {
+      // Log the full error for debugging
+      console.error("Fetch error:", {
+        url,
+        error,
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+
+      // Re-throw with more context
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        throw new Error(
+          `Cannot connect to API at ${url}. Please check:\n` +
+            `1. The API server is running\n` +
+            `2. The endpoint URL is correct\n` +
+            `3. CORS is properly configured`
+        );
+      }
+
+      throw error;
     }
-
-    return response.json();
   }
 
   /**
