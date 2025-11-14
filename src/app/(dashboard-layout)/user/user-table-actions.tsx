@@ -7,7 +7,6 @@ import {
   IconEye,
   IconTrash,
 } from "@tabler/icons-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,10 +18,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User } from "./user-schema";
-import { UserService } from "@/services/user.service";
 import { UserDetailsModal } from "./user-details-modal";
 import { UserStatsModal } from "./user-stats-modal";
 import { UserEditModal } from "./user-edit-modal";
+import { UserDeleteModal } from "./user-delete-modal";
 
 interface UserTableActionsProps {
   user: User;
@@ -30,23 +29,15 @@ interface UserTableActionsProps {
   onUserUpdated?: () => void;
 }
 
-export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTableActionsProps) {
+export function UserTableActions({
+  user,
+  onUserDeleted,
+  onUserUpdated,
+}: UserTableActionsProps) {
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   const [showStatsModal, setShowStatsModal] = React.useState(false);
   const [showEditModal, setShowEditModal] = React.useState(false);
-
-  const handleDelete = async () => {
-    try {
-      await UserService.deleteUser(user.id);
-      toast.success(`User ${user.name} deleted successfully`);
-      onUserDeleted?.();
-    } catch (error) {
-      console.error("Failed to delete user:", error);
-      toast.error("Failed to delete user", {
-        description: error instanceof Error ? error.message : "Please try again",
-      });
-    }
-  };
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
 
   const handleViewDetails = () => {
     setShowDetailsModal(true);
@@ -58,6 +49,10 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
 
   const handleEditUser = () => {
     setShowEditModal(true);
+  };
+
+  const handleDeleteUser = () => {
+    setShowDeleteModal(true);
   };
 
   return (
@@ -89,18 +84,7 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
             Edit User
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => {
-              toast.error(`Delete ${user.name}?`, {
-                description: "This action cannot be undone.",
-                action: {
-                  label: "Delete",
-                  onClick: handleDelete,
-                },
-              });
-            }}
-          >
+          <DropdownMenuItem variant="destructive" onClick={handleDeleteUser}>
             <IconTrash className="mr-2 size-4" />
             Delete User
           </DropdownMenuItem>
@@ -130,6 +114,14 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
         open={showEditModal}
         onOpenChange={setShowEditModal}
         onUserUpdated={onUserUpdated}
+      />
+
+      {/* User Delete Modal */}
+      <UserDeleteModal
+        user={user}
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        onUserDeleted={onUserDeleted}
       />
     </>
   );
