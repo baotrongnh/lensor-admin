@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   IconDotsVertical,
   IconEdit,
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { User } from "./user-schema";
 import { UserService } from "@/services/user.service";
+import { UserDetailsModal } from "./user-details-modal";
 
 interface UserTableActionsProps {
   user: User;
@@ -27,6 +29,8 @@ interface UserTableActionsProps {
 }
 
 export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTableActionsProps) {
+  const [showDetailsModal, setShowDetailsModal] = React.useState(false);
+
   const handleDelete = async () => {
     try {
       await UserService.deleteUser(user.id);
@@ -40,16 +44,8 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
     }
   };
 
-  const handleViewDetails = async () => {
-    try {
-      const response = await UserService.getUserById(user.id);
-      toast.success(`Viewing ${user.name}`, {
-        description: `Email: ${response.data.email}`,
-      });
-    } catch (error) {
-      console.error("Failed to fetch user details:", error);
-      toast.error("Failed to load user details");
-    }
+  const handleViewDetails = () => {
+    setShowDetailsModal(true);
   };
 
   const handleViewStats = async () => {
@@ -65,54 +61,64 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="data-[state=open]:bg-muted text-muted-foreground size-8"
-          size="icon"
-        >
-          <IconDotsVertical className="size-4" />
-          <span className="sr-only">Open menu</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleViewDetails}>
-          <IconEye className="mr-2 size-4" />
-          View Details
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleViewStats}>
-          <IconEye className="mr-2 size-4" />
-          View Statistics
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            toast.info(`Edit functionality coming soon`);
-            // You can implement a modal or navigate to edit page here
-          }}
-        >
-          <IconEdit className="mr-2 size-4" />
-          Edit User
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onClick={() => {
-            toast.error(`Delete ${user.name}?`, {
-              description: "This action cannot be undone.",
-              action: {
-                label: "Delete",
-                onClick: handleDelete,
-              },
-            });
-          }}
-        >
-          <IconTrash className="mr-2 size-4" />
-          Delete User
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="data-[state=open]:bg-muted text-muted-foreground size-8"
+            size="icon"
+          >
+            <IconDotsVertical className="size-4" />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleViewDetails}>
+            <IconEye className="mr-2 size-4" />
+            View Details
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleViewStats}>
+            <IconEye className="mr-2 size-4" />
+            View Statistics
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              toast.info(`Edit functionality coming soon`);
+              // You can implement a modal or navigate to edit page here
+            }}
+          >
+            <IconEdit className="mr-2 size-4" />
+            Edit User
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => {
+              toast.error(`Delete ${user.name}?`, {
+                description: "This action cannot be undone.",
+                action: {
+                  label: "Delete",
+                  onClick: handleDelete,
+                },
+              });
+            }}
+          >
+            <IconTrash className="mr-2 size-4" />
+            Delete User
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* User Details Modal */}
+      <UserDetailsModal
+        userId={user.id}
+        userName={user.name}
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+      />
+    </>
   );
 }
