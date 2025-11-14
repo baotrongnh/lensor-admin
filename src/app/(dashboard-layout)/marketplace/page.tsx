@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { UserTable } from "./user-table";
+import { ProductTable } from "./product-table";
 
-export default function UserManager() {
+export default function MarketplacePage() {
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-4">
@@ -11,16 +11,17 @@ export default function UserManager() {
           <div className="px-4 lg:px-6">
             <div className="mb-6">
               <h1 className="text-3xl font-bold tracking-tight">
-                User Management
+                Marketplace Management
               </h1>
               <p className="text-muted-foreground mt-2">
-                Quản lý người dùng, phân quyền và theo dõi hoạt động
+                Quản lý sản phẩm, theo dõi doanh số và đánh giá
               </p>
             </div>
-            <UserTable />
+            <ProductTable />
           </div>
         </div>
       </div>
     </div>
   );
 }
+
