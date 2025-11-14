@@ -81,6 +81,10 @@ const data = {
           title: "Marketplace",
           url: "marketplace",
         },
+        {
+          title: "Withdrawals",
+          url: "withdrawal",
+        },
       ],
     },
     {
