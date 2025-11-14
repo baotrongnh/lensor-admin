@@ -32,9 +32,9 @@ export interface GetUserResponse {
 }
 
 export interface UserStats {
-  // Add fields based on your actual API response
-  totalLogins?: number;
-  lastActivity?: string;
+  postsCount: number;
+  followersCount: number;
+  followingCount: number;
 }
 
 export interface GetUserStatsResponse {

@@ -21,6 +21,7 @@ import {
 import { User } from "./user-schema";
 import { UserService } from "@/services/user.service";
 import { UserDetailsModal } from "./user-details-modal";
+import { UserStatsModal } from "./user-stats-modal";
 
 interface UserTableActionsProps {
   user: User;
@@ -30,6 +31,7 @@ interface UserTableActionsProps {
 
 export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTableActionsProps) {
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
+  const [showStatsModal, setShowStatsModal] = React.useState(false);
 
   const handleDelete = async () => {
     try {
@@ -48,16 +50,8 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
     setShowDetailsModal(true);
   };
 
-  const handleViewStats = async () => {
-    try {
-      const response = await UserService.getUserStats(user.id);
-      toast.success(`Stats for ${user.name}`, {
-        description: JSON.stringify(response.data),
-      });
-    } catch (error) {
-      console.error("Failed to fetch user stats:", error);
-      toast.error("Failed to load user statistics");
-    }
+  const handleViewStats = () => {
+    setShowStatsModal(true);
   };
 
   return (
@@ -118,6 +112,15 @@ export function UserTableActions({ user, onUserDeleted, onUserUpdated }: UserTab
         userName={user.name}
         open={showDetailsModal}
         onOpenChange={setShowDetailsModal}
+      />
+
+      {/* User Statistics Modal */}
+      <UserStatsModal
+        userId={user.id}
+        userName={user.name}
+        userAvatar={user.avatar}
+        open={showStatsModal}
+        onOpenChange={setShowStatsModal}
       />
     </>
   );
