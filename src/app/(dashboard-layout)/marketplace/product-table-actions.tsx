@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { IconDotsVertical, IconEye, IconTrash } from "@tabler/icons-react";
+import { IconDotsVertical, IconEye, IconTrash, IconBan, IconCheck } from "@tabler/icons-react";
+import { ProductService } from "@/services/product.service";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +29,7 @@ export function ProductTableActions({
 }: ProductTableActionsProps) {
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+  const [isBlocking, setIsBlocking] = React.useState(false);
 
   const handleViewDetails = () => {
     setShowDetailsModal(true);
@@ -34,6 +37,34 @@ export function ProductTableActions({
 
   const handleDeleteProduct = () => {
     setShowDeleteModal(true);
+  };
+
+  const handleBlockProduct = async () => {
+    try {
+      setIsBlocking(true);
+      await ProductService.blockProduct(product.id, 'block');
+      toast.success('Product blocked successfully');
+      if (onProductDeleted) onProductDeleted();
+    } catch (error: any) {
+      console.error('Error blocking product:', error);
+      toast.error(error.message || 'Failed to block product');
+    } finally {
+      setIsBlocking(false);
+    }
+  };
+
+  const handleUnblockProduct = async () => {
+    try {
+      setIsBlocking(true);
+      await ProductService.blockProduct(product.id, 'unblock');
+      toast.success('Product unblocked successfully');
+      if (onProductDeleted) onProductDeleted();
+    } catch (error: any) {
+      console.error('Error unblocking product:', error);
+      toast.error(error.message || 'Failed to unblock product');
+    } finally {
+      setIsBlocking(false);
+    }
   };
 
   return (
@@ -55,6 +86,15 @@ export function ProductTableActions({
           <DropdownMenuItem onClick={handleViewDetails}>
             <IconEye className="mr-2 size-4" />
             View Details
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleBlockProduct} disabled={isBlocking}>
+            <IconBan className="mr-2 size-4" />
+            Block Product
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleUnblockProduct} disabled={isBlocking}>
+            <IconCheck className="mr-2 size-4" />
+            Unblock Product
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={handleDeleteProduct}>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '@/services/report.service';
 import { Report, ReportStatus } from '@/types/report';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
      Card,
      CardContent,
@@ -37,8 +38,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, XCircle, AlertCircle, Loader2, MoreVertical } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Loader2, MoreVertical, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 type ActionType = 'approved' | 'rejected' | 'need_more_info' | null;
 
@@ -51,6 +53,11 @@ export default function RefundPage() {
      const [adminResponse, setAdminResponse] = useState('');
      const [isDialogOpen, setIsDialogOpen] = useState(false);
      const [isSubmitting, setIsSubmitting] = useState(false);
+     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+     const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+     const [blockProduct, setBlockProduct] = useState(false);
+
+     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
      useEffect(() => {
           fetchReports();
@@ -80,7 +87,13 @@ export default function RefundPage() {
           setSelectedReport(report);
           setActionType(action);
           setAdminResponse('');
+          setBlockProduct(false);
           setIsDialogOpen(true);
+     };
+
+     const handleViewImage = (imagePath: string) => {
+          setSelectedImage(`${baseUrl}${imagePath}`);
+          setIsImageDialogOpen(true);
      };
 
      const handleConfirmAction = async () => {
@@ -97,8 +110,12 @@ export default function RefundPage() {
                let result;
                switch (actionType) {
                     case 'approved':
-                         result = await reportService.approveReport(selectedReport.id, adminResponse);
-                         toast.success('Report approved successfully. Refund processed for buyer.');
+                         result = await reportService.approveReport(selectedReport.id, adminResponse, blockProduct);
+                         if (blockProduct) {
+                              toast.success('Report approved successfully. Refund processed and product blocked.');
+                         } else {
+                              toast.success('Report approved successfully. Refund processed for buyer.');
+                         }
                          break;
                     case 'rejected':
                          result = await reportService.rejectReport(selectedReport.id, adminResponse);
@@ -265,6 +282,18 @@ export default function RefundPage() {
                                                                            </TableCell>
                                                                            <TableCell>
                                                                                 <div className="flex gap-2">
+                                                                                     {/* View Evidence Button */}
+                                                                                     {report.evidence && report.evidence.length > 0 && (
+                                                                                          <Button
+                                                                                               size="sm"
+                                                                                               variant="outline"
+                                                                                               onClick={() => handleActionClick(report, null)}
+                                                                                          >
+                                                                                               <Eye className="h-4 w-4 mr-1" />
+                                                                                               View ({report.evidence.length})
+                                                                                          </Button>
+                                                                                     )}
+
                                                                                      {report.status === 'pending' || report.status === 'need_more_info' ? (
                                                                                           <DropdownMenu>
                                                                                                <DropdownMenuTrigger asChild>
@@ -340,22 +369,69 @@ export default function RefundPage() {
                                         </div>
                                    </div>
 
-                                   <div className="grid gap-2">
-                                        <Label htmlFor="adminResponse">Admin Response *</Label>
-                                        <textarea
-                                             id="adminResponse"
-                                             className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                             placeholder={
-                                                  actionType === 'approved'
-                                                       ? 'Verified evidence. Product does not match description, preset files are corrupted. Refund processed for buyer.'
-                                                       : actionType === 'rejected'
-                                                            ? 'After reviewing evidence, product matches description. Report is invalid. Order restored to seller.'
-                                                            : 'Evidence is not clear enough. Please provide:\n- Detailed error screenshots\n- Video demo of preset not working\n- Log files if available'
-                                             }
-                                             value={adminResponse}
-                                             onChange={(e) => setAdminResponse(e.target.value)}
-                                        />
-                                   </div>
+                                   {selectedReport.evidence && selectedReport.evidence.length > 0 && (
+                                        <div className="grid gap-2">
+                                             <Label className="text-sm font-medium">Evidence ({selectedReport.evidence.length})</Label>
+                                             <div className="flex flex-wrap gap-2">
+                                                  {selectedReport.evidence.map((img, idx) => (
+                                                       <div
+                                                            key={idx}
+                                                            className="relative group cursor-pointer"
+                                                            onClick={() => handleViewImage(img)}
+                                                       >
+                                                            <div className="relative w-20 h-20 rounded-md overflow-hidden border border-border hover:border-primary transition-colors">
+                                                                 <Image
+                                                                      src={`${baseUrl}${img}`}
+                                                                      alt={`Evidence ${idx + 1}`}
+                                                                      fill
+                                                                      className="object-cover"
+                                                                 />
+                                                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                      <Eye className="h-6 w-6 text-white" />
+                                                                 </div>
+                                                            </div>
+                                                       </div>
+                                                  ))}
+                                             </div>
+                                        </div>
+                                   )}
+
+                                   {actionType && (
+                                        <>
+                                             <div className="grid gap-2">
+                                                  <Label htmlFor="adminResponse">Admin Response *</Label>
+                                                  <textarea
+                                                       id="adminResponse"
+                                                       className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                       placeholder={
+                                                            actionType === 'approved'
+                                                                 ? 'Verified evidence. Product does not match description, preset files are corrupted. Refund processed for buyer.'
+                                                                 : actionType === 'rejected'
+                                                                      ? 'After reviewing evidence, product matches description. Report is invalid. Order restored to seller.'
+                                                                      : 'Evidence is not clear enough. Please provide:\n- Detailed error screenshots\n- Video demo of preset not working\n- Log files if available'
+                                                       }
+                                                       value={adminResponse}
+                                                       onChange={(e) => setAdminResponse(e.target.value)}
+                                                  />
+                                             </div>
+
+                                             {actionType === 'approved' && (
+                                                  <div className="flex items-center space-x-2 p-3 bg-muted rounded-md">
+                                                       <Checkbox
+                                                            id="blockProduct"
+                                                            checked={blockProduct}
+                                                            onCheckedChange={(checked) => setBlockProduct(checked as boolean)}
+                                                       />
+                                                       <Label
+                                                            htmlFor="blockProduct"
+                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                                       >
+                                                            Block this product (Prevent future sales)
+                                                       </Label>
+                                                  </div>
+                                             )}
+                                        </>
+                                   )}
                               </div>
                          )}
 
@@ -367,14 +443,42 @@ export default function RefundPage() {
                               >
                                    Cancel
                               </Button>
-                              <Button
-                                   onClick={handleConfirmAction}
-                                   disabled={isSubmitting || !adminResponse.trim()}
-                              >
-                                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                   Confirm {actionType === 'approved' ? 'Approval' : actionType === 'rejected' ? 'Rejection' : 'Request'}
-                              </Button>
+                              {actionType && (
+                                   <Button
+                                        onClick={handleConfirmAction}
+                                        disabled={isSubmitting || !adminResponse.trim()}
+                                   >
+                                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Confirm {actionType === 'approved' ? 'Approval' : actionType === 'rejected' ? 'Rejection' : 'Request'}
+                                   </Button>
+                              )}
                          </DialogFooter>
+                    </DialogContent>
+               </Dialog>
+
+               {/* Image Preview Dialog */}
+               <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+                    <DialogContent className="sm:max-w-[800px] p-0">
+                         <div className="relative">
+                              <Button
+                                   size="icon"
+                                   variant="ghost"
+                                   className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background"
+                                   onClick={() => setIsImageDialogOpen(false)}
+                              >
+                                   <X className="h-4 w-4" />
+                              </Button>
+                              {selectedImage && (
+                                   <div className="relative w-full h-[600px]">
+                                        <Image
+                                             src={selectedImage}
+                                             alt="Evidence"
+                                             fill
+                                             className="object-contain"
+                                        />
+                                   </div>
+                              )}
+                         </div>
                     </DialogContent>
                </Dialog>
           </div>

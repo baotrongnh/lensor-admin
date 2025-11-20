@@ -17,6 +17,7 @@ export interface Withdrawal {
      note: string | null
      adminId: string | null
      adminResponse: string | null
+     paymentProofImageUrl: string[] | null
      processedAt: string | null
      createdAt: string
      updatedAt: string

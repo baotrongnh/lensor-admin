@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
      Table,
      TableBody,
@@ -32,7 +33,7 @@ import {
      DropdownMenuTrigger,
      DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { CheckCircle, XCircle, Clock, CreditCard, Calendar, DollarSign, MoreVertical, Eye } from "lucide-react";
+import { CheckCircle, XCircle, Clock, CreditCard, Calendar, DollarSign, MoreVertical, Eye, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export default function WithdrawalManagementPage() {
@@ -44,7 +45,10 @@ export default function WithdrawalManagementPage() {
      const [actionDialogOpen, setActionDialogOpen] = useState(false);
      const [actionType, setActionType] = useState<"approved" | "rejected">("approved");
      const [adminResponse, setAdminResponse] = useState("");
+     const [paymentProof, setPaymentProof] = useState<File | null>(null);
      const [processing, setProcessing] = useState(false);
+     const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
+     const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
 
      useEffect(() => {
           fetchWithdrawals();
@@ -80,9 +84,10 @@ export default function WithdrawalManagementPage() {
           setActionType(action);
           setAdminResponse(
                action === "approved"
-                    ? "Đã xác nhận thông tin thẻ. Tiền sẽ được chuyển trong 1-3 ngày làm việc."
+                    ? "Đã xác nhận thông tin thẻ và chuyển khoản. Tiền sẽ được chuyển trong 1-3 ngày làm việc."
                     : "Thông tin thẻ ngân hàng không khớp. Vui lòng kiểm tra lại tên chủ thẻ và số tài khoản."
           );
+          setPaymentProof(null);
           setActionDialogOpen(true);
      };
 
@@ -92,16 +97,27 @@ export default function WithdrawalManagementPage() {
                return;
           }
 
+          // Validate payment proof for approval
+          if (actionType === "approved" && !paymentProof) {
+               toast.error("Please upload payment proof (transfer screenshot)");
+               return;
+          }
+
           try {
                setProcessing(true);
-               await withdrawalService.processWithdrawalAction(selectedWithdrawal.id, {
-                    action: actionType,
-                    adminResponse: adminResponse.trim(),
-               });
+               await withdrawalService.processWithdrawalAction(
+                    selectedWithdrawal.id,
+                    {
+                         action: actionType,
+                         adminResponse: adminResponse.trim(),
+                    },
+                    paymentProof || undefined
+               );
                toast.success(`Withdrawal ${actionType} successfully!`);
                setActionDialogOpen(false);
                setSelectedWithdrawal(null);
                setAdminResponse("");
+               setPaymentProof(null);
                fetchWithdrawals();
           } catch (error: any) {
                console.error("Error processing withdrawal:", error);
@@ -127,6 +143,16 @@ export default function WithdrawalManagementPage() {
                hour: "2-digit",
                minute: "2-digit",
           });
+     };
+
+     const getImageUrl = (imagePath: string) => {
+          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://14.169.52.232:3005';
+          return `${baseUrl}${imagePath}`;
+     };
+
+     const handleViewImage = (imageUrl: string) => {
+          setPreviewImageUrl(getImageUrl(imageUrl));
+          setImagePreviewOpen(true);
      };
 
      const getStatusBadge = (status: string) => {
@@ -258,6 +284,7 @@ export default function WithdrawalManagementPage() {
                                                             <TableHead>Fee (17%)</TableHead>
                                                             <TableHead>Actual Amount</TableHead>
                                                             <TableHead>Orders</TableHead>
+                                                            <TableHead>Payment Proof</TableHead>
                                                             <TableHead>Created At</TableHead>
                                                             <TableHead>Actions</TableHead>
                                                        </TableRow>
@@ -296,6 +323,21 @@ export default function WithdrawalManagementPage() {
                                                                       <Badge variant="outline">
                                                                            {withdrawal.orderIds.length} order(s)
                                                                       </Badge>
+                                                                 </TableCell>
+                                                                 <TableCell>
+                                                                      {withdrawal.paymentProofImageUrl && withdrawal.paymentProofImageUrl.length > 0 ? (
+                                                                           <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className="h-8"
+                                                                                onClick={() => handleViewImage(withdrawal.paymentProofImageUrl![0])}
+                                                                           >
+                                                                                <ImageIcon className="h-3 w-3 mr-1" />
+                                                                                View
+                                                                           </Button>
+                                                                      ) : (
+                                                                           <span className="text-xs text-muted-foreground">No proof</span>
+                                                                      )}
                                                                  </TableCell>
                                                                  <TableCell className="text-sm">
                                                                       {formatDate(withdrawal.createdAt)}
@@ -416,6 +458,36 @@ export default function WithdrawalManagementPage() {
                                              rows={4}
                                         />
                                    </div>
+
+                                   {actionType === "approved" && (
+                                        <div className="space-y-2">
+                                             <Label htmlFor="paymentProof">Payment Proof (Required) *</Label>
+                                             <div className="flex items-center gap-2">
+                                                  <Input
+                                                       id="paymentProof"
+                                                       type="file"
+                                                       accept="image/*"
+                                                       onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                 setPaymentProof(file);
+                                                            }
+                                                       }}
+                                                       className="cursor-pointer"
+                                                  />
+                                             </div>
+                                             {paymentProof && (
+                                                  <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950 rounded-md text-sm text-green-700 dark:text-green-300">
+                                                       <ImageIcon className="h-4 w-4" />
+                                                       <span>{paymentProof.name}</span>
+                                                       <span className="text-xs text-muted-foreground">({(paymentProof.size / 1024).toFixed(1)} KB)</span>
+                                                  </div>
+                                             )}
+                                             <p className="text-xs text-muted-foreground">
+                                                  Upload screenshot of bank transfer. Required for approval.
+                                             </p>
+                                        </div>
+                                   )}
                               </div>
                          )}
 
@@ -434,6 +506,37 @@ export default function WithdrawalManagementPage() {
                               >
                                    {processing && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>}
                                    Confirm {actionType === "approved" ? "Approval" : "Rejection"}
+                              </Button>
+                         </DialogFooter>
+                    </DialogContent>
+               </Dialog>
+
+               {/* Image Preview Dialog */}
+               <Dialog open={imagePreviewOpen} onOpenChange={setImagePreviewOpen}>
+                    <DialogContent className="sm:max-w-[800px] max-h-[90vh]">
+                         <DialogHeader>
+                              <DialogTitle>Payment Proof</DialogTitle>
+                              <DialogDescription>
+                                   Bank transfer screenshot
+                              </DialogDescription>
+                         </DialogHeader>
+                         <div className="flex justify-center items-center p-4 bg-muted/30 rounded-lg overflow-hidden">
+                              <img
+                                   src={previewImageUrl}
+                                   alt="Payment Proof"
+                                   className="max-w-full max-h-[70vh] object-contain rounded-md"
+                                   onError={(e) => {
+                                        e.currentTarget.src = '/placeholder-image.png';
+                                   }}
+                              />
+                         </div>
+                         <DialogFooter>
+                              <Button onClick={() => setImagePreviewOpen(false)}>Close</Button>
+                              <Button
+                                   variant="outline"
+                                   onClick={() => window.open(previewImageUrl, '_blank')}
+                              >
+                                   Open in New Tab
                               </Button>
                          </DialogFooter>
                     </DialogContent>
