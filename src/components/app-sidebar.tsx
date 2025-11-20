@@ -61,6 +61,10 @@ const data = {
         {
           title: "General analysis",
           url: "/dashboard",
+        },
+        {
+          title: "Withdrawals analysis",
+          url: "/withdrawal/statistics",
         }
       ],
     },

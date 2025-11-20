@@ -36,3 +36,23 @@ export interface WithdrawalActionResponse {
      message: string
      data: Withdrawal
 }
+
+export interface WithdrawalStatisticsFilters {
+     year: string
+     month: string
+}
+
+export interface WithdrawalStatistics {
+     totalWithdrawals: number
+     totalAmount: number
+     totalFee: number
+     totalActualAmount: number
+     formattedTotalAmount: string
+     formattedTotalFee: string
+     formattedTotalActualAmount: string
+     filters: WithdrawalStatisticsFilters
+}
+
+export interface WithdrawalStatisticsResponse {
+     data: WithdrawalStatistics
+}
