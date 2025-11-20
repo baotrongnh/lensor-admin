@@ -3,7 +3,8 @@ import {
      Withdrawal,
      WithdrawalsResponse,
      WithdrawalActionPayload,
-     WithdrawalActionResponse
+     WithdrawalActionResponse,
+     WithdrawalStatisticsResponse
 } from '@/types/withdrawal';
 
 export const withdrawalService = {
@@ -49,6 +50,19 @@ export const withdrawalService = {
                `/admin/withdrawals/${withdrawalId}/action`,
                payload
           );
+          return response.data;
+     },
+
+     // Get withdrawal statistics with optional filters
+     async getStatistics(year?: string, month?: string): Promise<WithdrawalStatisticsResponse> {
+          const params = new URLSearchParams();
+          if (year) params.append('year', year);
+          if (month) params.append('month', month);
+
+          const queryString = params.toString();
+          const url = `/admin/withdrawals/statistics${queryString ? `?${queryString}` : ''}`;
+
+          const response = await apiClient.get<WithdrawalStatisticsResponse>(url);
           return response.data;
      },
 };

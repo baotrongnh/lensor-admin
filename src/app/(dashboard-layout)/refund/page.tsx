@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { reportService } from '@/services/report.service';
+import { ProductService } from '@/services/product.service';
 import { Report, ReportStatus } from '@/types/report';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -110,9 +111,17 @@ export default function RefundPage() {
                let result;
                switch (actionType) {
                     case 'approved':
-                         result = await reportService.approveReport(selectedReport.id, adminResponse, blockProduct);
-                         if (blockProduct) {
-                              toast.success('Report approved successfully. Refund processed and product blocked.');
+                         result = await reportService.approveReport(selectedReport.id, adminResponse);
+
+                         // If blockProduct is checked, call separate block API
+                         if (blockProduct && selectedReport.productId) {
+                              try {
+                                   await ProductService.blockProduct(selectedReport.productId, 'block');
+                                   toast.success('Report approved successfully. Refund processed and product blocked.');
+                              } catch (blockError) {
+                                   console.error('Error blocking product:', blockError);
+                                   toast.warning('Report approved and refund processed, but failed to block product.');
+                              }
                          } else {
                               toast.success('Report approved successfully. Refund processed for buyer.');
                          }

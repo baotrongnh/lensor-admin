@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { withdrawalService } from "@/services/withdrawal.service";
-import { Withdrawal } from "@/types/withdrawal";
+import { Withdrawal, WithdrawalStatistics } from "@/types/withdrawal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -33,14 +33,18 @@ import {
      DropdownMenuTrigger,
      DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { CheckCircle, XCircle, Clock, CreditCard, Calendar, DollarSign, MoreVertical, Eye, Upload, Image as ImageIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { CheckCircle, XCircle, Clock, CreditCard, Calendar, DollarSign, MoreVertical, Eye, Upload, Image as ImageIcon, TrendingUp, Wallet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function WithdrawalManagementPage() {
      const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
      const [filteredWithdrawals, setFilteredWithdrawals] = useState<Withdrawal[]>([]);
      const [loading, setLoading] = useState(false);
-     const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all");
+     const [activeTab, setActiveTab] = useState<"overview" | "all" | "pending" | "approved" | "rejected" | "statistics">("overview");
      const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
      const [actionDialogOpen, setActionDialogOpen] = useState(false);
      const [actionType, setActionType] = useState<"approved" | "rejected">("approved");
@@ -49,6 +53,12 @@ export default function WithdrawalManagementPage() {
      const [processing, setProcessing] = useState(false);
      const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
      const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
+     const [statistics, setStatistics] = useState<WithdrawalStatistics | null>(null);
+     const [statsLoading, setStatsLoading] = useState(false);
+     const [selectedYear, setSelectedYear] = useState('all');
+     const [selectedMonth, setSelectedMonth] = useState('all');
+     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+     const [detailsWithdrawal, setDetailsWithdrawal] = useState<Withdrawal | null>(null);
 
      useEffect(() => {
           fetchWithdrawals();
@@ -57,6 +67,12 @@ export default function WithdrawalManagementPage() {
      useEffect(() => {
           filterWithdrawals();
      }, [activeTab, withdrawals]);
+
+     useEffect(() => {
+          if (activeTab === 'statistics') {
+               fetchStatistics();
+          }
+     }, [activeTab, selectedYear, selectedMonth]);
 
      const fetchWithdrawals = async () => {
           try {
@@ -72,10 +88,25 @@ export default function WithdrawalManagementPage() {
      };
 
      const filterWithdrawals = () => {
-          if (activeTab === "all") {
+          if (activeTab === "all" || activeTab === "overview" || activeTab === "statistics") {
                setFilteredWithdrawals(withdrawals);
           } else {
                setFilteredWithdrawals(withdrawals.filter((w) => w.status === activeTab));
+          }
+     };
+
+     const fetchStatistics = async () => {
+          try {
+               setStatsLoading(true);
+               const yearParam = selectedYear !== 'all' ? selectedYear : undefined;
+               const monthParam = selectedMonth !== 'all' ? selectedMonth : undefined;
+               const response = await withdrawalService.getStatistics(yearParam, monthParam);
+               setStatistics(response.data);
+          } catch (error) {
+               console.error('Failed to fetch statistics:', error);
+               toast.error('Failed to fetch statistics');
+          } finally {
+               setStatsLoading(false);
           }
      };
 
@@ -155,6 +186,11 @@ export default function WithdrawalManagementPage() {
           setImagePreviewOpen(true);
      };
 
+     const handleViewDetails = (withdrawal: Withdrawal) => {
+          setDetailsWithdrawal(withdrawal);
+          setDetailsDialogOpen(true);
+     };
+
      const getStatusBadge = (status: string) => {
           const config: Record<string, { variant: any; label: string; icon: React.ReactNode; className?: string }> = {
                pending: {
@@ -211,7 +247,7 @@ export default function WithdrawalManagementPage() {
                     <Card>
                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                               <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
+                              <Wallet className="h-4 w-4 text-muted-foreground" />
                          </CardHeader>
                          <CardContent>
                               <div className="text-2xl font-bold">{stats.total}</div>
@@ -238,7 +274,7 @@ export default function WithdrawalManagementPage() {
                     <Card>
                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                               <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
+                              <Wallet className="h-4 w-4 text-muted-foreground" />
                          </CardHeader>
                          <CardContent>
                               <div className="text-2xl font-bold">{formatCurrency(stats.totalAmount)}</div>
@@ -249,10 +285,12 @@ export default function WithdrawalManagementPage() {
                {/* Withdrawals Table */}
                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
                     <TabsList>
+                         <TabsTrigger value="overview">Overview</TabsTrigger>
                          <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
                          <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
                          <TabsTrigger value="approved">Approved ({stats.approved})</TabsTrigger>
                          <TabsTrigger value="rejected">Rejected ({stats.rejected})</TabsTrigger>
+                         <TabsTrigger value="statistics">Statistics</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value={activeTab} className="mt-4">
@@ -356,9 +394,7 @@ export default function WithdrawalManagementPage() {
                                                                            <DropdownMenuContent align="end">
                                                                                 <DropdownMenuItem
                                                                                      className="cursor-pointer"
-                                                                                     onClick={() => {
-                                                                                          // View details logic if needed
-                                                                                     }}
+                                                                                     onClick={() => handleViewDetails(withdrawal)}
                                                                                 >
                                                                                      <Eye className="mr-2 h-4 w-4" />
                                                                                      View Details
@@ -406,6 +442,231 @@ export default function WithdrawalManagementPage() {
                                    )}
                               </CardContent>
                          </Card>
+                    </TabsContent>
+
+                    {/* Statistics Tab */}
+                    <TabsContent value="statistics" className="mt-4 space-y-6">
+                         {statsLoading ? (
+                              <div className="flex items-center justify-center h-[600px]">
+                                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                              </div>
+                         ) : !statistics ? (
+                              <div className="flex items-center justify-center h-[600px]">
+                                   <p className="text-muted-foreground">Unable to load statistics data</p>
+                              </div>
+                         ) : (
+                              <>
+                                   {/* Filters */}
+                                   <Card>
+                                        <CardHeader>
+                                             <CardTitle>Filters</CardTitle>
+                                             <CardDescription>Select time period to view statistics</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                             <div className="flex flex-wrap gap-4">
+                                                  <div className="w-[200px]">
+                                                       <label className="text-sm font-medium mb-2 block">Year</label>
+                                                       <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                                            <SelectTrigger>
+                                                                 <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                 <SelectItem value="all">All Years</SelectItem>
+                                                                 {Array.from({ length: 5 }, (_, i) => {
+                                                                      const year = (new Date().getFullYear() - i).toString();
+                                                                      return (
+                                                                           <SelectItem key={year} value={year}>
+                                                                                {year}
+                                                                           </SelectItem>
+                                                                      );
+                                                                 })}
+                                                            </SelectContent>
+                                                       </Select>
+                                                  </div>
+                                                  <div className="w-[200px]">
+                                                       <label className="text-sm font-medium mb-2 block">Month</label>
+                                                       <Select
+                                                            value={selectedMonth}
+                                                            onValueChange={setSelectedMonth}
+                                                            disabled={selectedYear === 'all'}
+                                                       >
+                                                            <SelectTrigger>
+                                                                 <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                 {[
+                                                                      { value: 'all', label: 'All Months' },
+                                                                      { value: '1', label: 'January' },
+                                                                      { value: '2', label: 'February' },
+                                                                      { value: '3', label: 'March' },
+                                                                      { value: '4', label: 'April' },
+                                                                      { value: '5', label: 'May' },
+                                                                      { value: '6', label: 'June' },
+                                                                      { value: '7', label: 'July' },
+                                                                      { value: '8', label: 'August' },
+                                                                      { value: '9', label: 'September' },
+                                                                      { value: '10', label: 'October' },
+                                                                      { value: '11', label: 'November' },
+                                                                      { value: '12', label: 'December' },
+                                                                 ].map((month) => (
+                                                                      <SelectItem key={month.value} value={month.value}>
+                                                                           {month.label}
+                                                                      </SelectItem>
+                                                                 ))}
+                                                            </SelectContent>
+                                                       </Select>
+                                                  </div>
+                                             </div>
+                                        </CardContent>
+                                   </Card>
+
+                                   {/* Stats Cards */}
+                                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                        <Card>
+                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                  <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+                                                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                             </CardHeader>
+                                             <CardContent>
+                                                  <div className="text-2xl font-bold">{statistics.totalWithdrawals}</div>
+                                                  <p className="text-xs text-muted-foreground">
+                                                       Number of withdrawal requests
+                                                  </p>
+                                             </CardContent>
+                                        </Card>
+                                        <Card>
+                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                  <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
+                                                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                                             </CardHeader>
+                                             <CardContent>
+                                                  <div className="text-2xl font-bold">{statistics.formattedTotalAmount}</div>
+                                                  <p className="text-xs text-muted-foreground">
+                                                       Total withdrawal requested
+                                                  </p>
+                                             </CardContent>
+                                        </Card>
+                                        <Card>
+                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                  <CardTitle className="text-sm font-medium">Withdrawal Fee</CardTitle>
+                                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                             </CardHeader>
+                                             <CardContent>
+                                                  <div className="text-2xl font-bold">{statistics.formattedTotalFee}</div>
+                                                  <p className="text-xs text-muted-foreground">
+                                                       Total transaction fee
+                                                  </p>
+                                             </CardContent>
+                                        </Card>
+                                        <Card>
+                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                  <CardTitle className="text-sm font-medium">Actual Amount</CardTitle>
+                                                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                                             </CardHeader>
+                                             <CardContent>
+                                                  <div className="text-2xl font-bold">{statistics.formattedTotalActualAmount}</div>
+                                                  <p className="text-xs text-muted-foreground">
+                                                       Amount users received
+                                                  </p>
+                                             </CardContent>
+                                        </Card>
+                                   </div>
+
+                                   {/* Charts */}
+                                   <div className="grid gap-4 md:grid-cols-2">
+                                        {/* Bar Chart */}
+                                        <Card>
+                                             <CardHeader>
+                                                  <CardTitle>Amount Analysis</CardTitle>
+                                                  <CardDescription>Compare total amount, fees and actual amount</CardDescription>
+                                             </CardHeader>
+                                             <CardContent>
+                                                  <ResponsiveContainer width="100%" height={300}>
+                                                       <BarChart data={[
+                                                            { name: 'Total Amount', value: statistics.totalAmount, formatted: statistics.formattedTotalAmount },
+                                                            { name: 'Withdrawal Fee', value: statistics.totalFee, formatted: statistics.formattedTotalFee },
+                                                            { name: 'Actual Amount', value: statistics.totalActualAmount, formatted: statistics.formattedTotalActualAmount },
+                                                       ]}>
+                                                            <CartesianGrid strokeDasharray="3 3" />
+                                                            <XAxis dataKey="name" />
+                                                            <YAxis />
+                                                            <Tooltip
+                                                                 formatter={(value, name, props) => [props.payload.formatted, name]}
+                                                            />
+                                                            <Legend />
+                                                            <Bar dataKey="value" fill="#8884d8" name="Amount (VND)" />
+                                                       </BarChart>
+                                                  </ResponsiveContainer>
+                                             </CardContent>
+                                        </Card>
+
+                                        {/* Pie Chart */}
+                                        <Card>
+                                             <CardHeader>
+                                                  <CardTitle>Money Distribution</CardTitle>
+                                                  <CardDescription>Ratio between actual amount and fees</CardDescription>
+                                             </CardHeader>
+                                             <CardContent>
+                                                  <ResponsiveContainer width="100%" height={300}>
+                                                       <PieChart>
+                                                            <Pie
+                                                                 data={[
+                                                                      { name: 'Actual Amount', value: statistics.totalActualAmount },
+                                                                      { name: 'Withdrawal Fee', value: statistics.totalFee },
+                                                                 ]}
+                                                                 cx="50%"
+                                                                 cy="50%"
+                                                                 labelLine={false}
+                                                                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                                                                 outerRadius={80}
+                                                                 fill="#8884d8"
+                                                                 dataKey="value"
+                                                            >
+                                                                 {[0, 1].map((index) => (
+                                                                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                                                 ))}
+                                                            </Pie>
+                                                            <Tooltip />
+                                                       </PieChart>
+                                                  </ResponsiveContainer>
+                                             </CardContent>
+                                        </Card>
+                                   </div>
+
+                                   {/* Additional Info Card */}
+                                   <Card>
+                                        <CardHeader>
+                                             <CardTitle>Detailed Information</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2">
+                                             <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                                                  <span className="font-medium">Average fee per transaction:</span>
+                                                  <span className="font-bold">
+                                                       {statistics.totalWithdrawals > 0
+                                                            ? Math.round(statistics.totalFee / statistics.totalWithdrawals).toLocaleString('vi-VN')
+                                                            : 0} ₫
+                                                  </span>
+                                             </div>
+                                             <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                                                  <span className="font-medium">Fee rate:</span>
+                                                  <span className="font-bold">
+                                                       {statistics.totalAmount > 0
+                                                            ? ((statistics.totalFee / statistics.totalAmount) * 100).toFixed(2)
+                                                            : 0}%
+                                                  </span>
+                                             </div>
+                                             <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                                                  <span className="font-medium">Average amount per transaction:</span>
+                                                  <span className="font-bold">
+                                                       {statistics.totalWithdrawals > 0
+                                                            ? Math.round(statistics.totalAmount / statistics.totalWithdrawals).toLocaleString('vi-VN')
+                                                            : 0} ₫
+                                                  </span>
+                                             </div>
+                                        </CardContent>
+                                   </Card>
+                              </>
+                         )}
                     </TabsContent>
                </Tabs>
 
@@ -538,6 +799,199 @@ export default function WithdrawalManagementPage() {
                               >
                                    Open in New Tab
                               </Button>
+                         </DialogFooter>
+                    </DialogContent>
+               </Dialog>
+
+               {/* Withdrawal Details Dialog */}
+               <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+                    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                         <DialogHeader>
+                              <DialogTitle>Withdrawal Request Details</DialogTitle>
+                              <DialogDescription>
+                                   Complete information about this withdrawal request
+                              </DialogDescription>
+                         </DialogHeader>
+
+                         {detailsWithdrawal && (
+                              <div className="space-y-6">
+                                   {/* Basic Information */}
+                                   <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg">Basic Information</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                             <div>
+                                                  <p className="text-sm text-muted-foreground">Withdrawal ID</p>
+                                                  <p className="text-sm font-mono">{detailsWithdrawal.id}</p>
+                                             </div>
+                                             <div>
+                                                  <p className="text-sm text-muted-foreground">Status</p>
+                                                  {getStatusBadge(detailsWithdrawal.status)}
+                                             </div>
+                                             <div>
+                                                  <p className="text-sm text-muted-foreground">Created At</p>
+                                                  <p className="text-sm">{formatDate(detailsWithdrawal.createdAt)}</p>
+                                             </div>
+                                             {detailsWithdrawal.processedAt && (
+                                                  <div>
+                                                       <p className="text-sm text-muted-foreground">Processed At</p>
+                                                       <p className="text-sm">{formatDate(detailsWithdrawal.processedAt)}</p>
+                                                  </div>
+                                             )}
+                                        </div>
+                                   </div>
+
+                                   {/* Financial Information */}
+                                   <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg">Financial Information</h3>
+                                        <div className="p-4 bg-muted rounded-lg space-y-3">
+                                             <div className="flex justify-between items-center">
+                                                  <span className="text-sm text-muted-foreground">Total Amount:</span>
+                                                  <span className="text-base font-semibold">{formatCurrency(detailsWithdrawal.amount)}</span>
+                                             </div>
+                                             <div className="flex justify-between items-center text-red-600">
+                                                  <span className="text-sm">Withdrawal Fee (17%):</span>
+                                                  <span className="text-base font-semibold">-{formatCurrency(detailsWithdrawal.fee)}</span>
+                                             </div>
+                                             <div className="border-t pt-3">
+                                                  <div className="flex justify-between items-center">
+                                                       <span className="text-sm font-medium">Actual Amount to Transfer:</span>
+                                                       <span className="text-xl font-bold text-green-600">{formatCurrency(detailsWithdrawal.actualAmount)}</span>
+                                                  </div>
+                                             </div>
+                                        </div>
+                                   </div>
+
+                                   {/* Bank Information */}
+                                   <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg">Bank Information</h3>
+                                        <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg space-y-2">
+                                             <div className="flex items-center gap-2">
+                                                  <CreditCard className="h-4 w-4 text-blue-600" />
+                                                  <span className="font-medium text-blue-900 dark:text-blue-100">
+                                                       {detailsWithdrawal.bankInfo.bankName}
+                                                  </span>
+                                             </div>
+                                             <div className="ml-6 space-y-1 text-sm">
+                                                  <div>
+                                                       <span className="text-muted-foreground">Account Number: </span>
+                                                       <span className="font-mono font-semibold">{detailsWithdrawal.bankInfo.accountNumber}</span>
+                                                  </div>
+                                                  <div>
+                                                       <span className="text-muted-foreground">Account Holder: </span>
+                                                       <span className="font-semibold">{detailsWithdrawal.bankInfo.accountHolder}</span>
+                                                  </div>
+                                             </div>
+                                        </div>
+                                   </div>
+
+                                   {/* Orders Information */}
+                                   <div className="space-y-4">
+                                        <h3 className="font-semibold text-lg">Orders Included ({detailsWithdrawal.orderIds.length})</h3>
+                                        <div className="p-4 bg-muted rounded-lg">
+                                             <div className="space-y-2">
+                                                  {detailsWithdrawal.orderIds.map((orderId, index) => (
+                                                       <div key={orderId} className="flex items-center justify-between p-2 bg-background rounded border">
+                                                            <div className="flex items-center gap-2">
+                                                                 <span className="text-xs font-medium text-muted-foreground">Order {index + 1}:</span>
+                                                                 <span className="text-sm font-mono">{orderId}</span>
+                                                            </div>
+                                                            <Button
+                                                                 variant="ghost"
+                                                                 size="sm"
+                                                                 className="h-7 text-xs"
+                                                                 onClick={() => {
+                                                                      navigator.clipboard.writeText(orderId);
+                                                                      toast.success('Order ID copied to clipboard');
+                                                                 }}
+                                                            >
+                                                                 Copy
+                                                            </Button>
+                                                       </div>
+                                                  ))}
+                                             </div>
+                                        </div>
+                                   </div>
+
+                                   {/* Note */}
+                                   {detailsWithdrawal.note && (
+                                        <div className="space-y-4">
+                                             <h3 className="font-semibold text-lg">Seller's Note</h3>
+                                             <div className="p-4 bg-muted rounded-lg">
+                                                  <p className="text-sm">{detailsWithdrawal.note}</p>
+                                             </div>
+                                        </div>
+                                   )}
+
+                                   {/* Admin Response */}
+                                   {detailsWithdrawal.adminResponse && (
+                                        <div className="space-y-4">
+                                             <h3 className="font-semibold text-lg">Admin Response</h3>
+                                             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                                  <p className="text-sm text-blue-900 dark:text-blue-100">{detailsWithdrawal.adminResponse}</p>
+                                             </div>
+                                        </div>
+                                   )}
+
+                                   {/* Payment Proof */}
+                                   {detailsWithdrawal.paymentProofImageUrl && detailsWithdrawal.paymentProofImageUrl.length > 0 && (
+                                        <div className="space-y-4">
+                                             <h3 className="font-semibold text-lg">Payment Proof</h3>
+                                             <div className="flex items-center gap-4">
+                                                  <div className="relative group">
+                                                       <img
+                                                            src={getImageUrl(detailsWithdrawal.paymentProofImageUrl[0])}
+                                                            alt="Payment Proof Thumbnail"
+                                                            className="h-32 w-32 object-cover rounded-md border cursor-pointer"
+                                                            onClick={() => handleViewImage(detailsWithdrawal.paymentProofImageUrl![0])}
+                                                       />
+                                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center cursor-pointer"
+                                                            onClick={() => handleViewImage(detailsWithdrawal.paymentProofImageUrl![0])}
+                                                       >
+                                                            <Eye className="h-8 w-8 text-white" />
+                                                       </div>
+                                                  </div>
+                                                  <Button
+                                                       variant="outline"
+                                                       onClick={() => handleViewImage(detailsWithdrawal.paymentProofImageUrl![0])}
+                                                  >
+                                                       <ImageIcon className="h-4 w-4 mr-2" />
+                                                       View Full Image
+                                                  </Button>
+                                             </div>
+                                        </div>
+                                   )}
+                              </div>
+                         )}
+
+                         <DialogFooter>
+                              <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
+                                   Close
+                              </Button>
+                              {detailsWithdrawal?.status === "pending" && (
+                                   <>
+                                        <Button
+                                             variant="default"
+                                             className="bg-green-600 hover:bg-green-700"
+                                             onClick={() => {
+                                                  setDetailsDialogOpen(false);
+                                                  handleOpenActionDialog(detailsWithdrawal, "approved");
+                                             }}
+                                        >
+                                             <CheckCircle className="mr-2 h-4 w-4" />
+                                             Approve
+                                        </Button>
+                                        <Button
+                                             variant="destructive"
+                                             onClick={() => {
+                                                  setDetailsDialogOpen(false);
+                                                  handleOpenActionDialog(detailsWithdrawal, "rejected");
+                                             }}
+                                        >
+                                             <XCircle className="mr-2 h-4 w-4" />
+                                             Reject
+                                        </Button>
+                                   </>
+                              )}
                          </DialogFooter>
                     </DialogContent>
                </Dialog>

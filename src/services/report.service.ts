@@ -70,13 +70,11 @@ export const reportService = {
 
      /**
       * Approve a report (refund to buyer)
-      * @param blockProduct - Optional: Block the product after approving refund
       */
-     async approveReport(reportId: string, adminResponse: string, blockProduct?: boolean): Promise<ReportActionResponse> {
+     async approveReport(reportId: string, adminResponse: string): Promise<ReportActionResponse> {
           return this.performAction(reportId, {
                action: 'approved',
                adminResponse,
-               blockProduct,
           });
      },
 

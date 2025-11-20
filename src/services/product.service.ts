@@ -215,7 +215,7 @@ export class ProductService {
     id: string,
     action: 'block' | 'unblock'
   ): Promise<{ success: boolean; message: string }> {
-    const url = `${API_BASE_URL}/admin/${id}/action`;
+    const url = `${API_BASE_URL}/admin/products/${id}/action`;
     return this.fetchWithAuth(url, {
       method: "POST",
       body: JSON.stringify({ action }),
