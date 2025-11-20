@@ -25,6 +25,7 @@ export interface ReportsResponse {
 export interface ReportActionPayload {
      action: ReportAction;
      adminResponse: string;
+     blockProduct?: boolean;
 }
 
 export interface ReportActionResponse {

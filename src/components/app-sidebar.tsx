@@ -12,6 +12,7 @@ import {
   PieChart,
   Settings2,
   SquareTerminal,
+  Headphones,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -84,6 +85,18 @@ const data = {
         {
           title: "Withdrawals",
           url: "withdrawal",
+        },
+      ],
+    },
+    {
+      title: "Support",
+      url: "#",
+      icon: Headphones,
+      isActive: true,
+      items: [
+        {
+          title: "Tickets",
+          url: "/support",
         },
       ],
     },

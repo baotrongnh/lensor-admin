@@ -22,8 +22,29 @@ export const withdrawalService = {
      // Process withdrawal action (approve/reject)
      async processWithdrawalAction(
           withdrawalId: string,
-          payload: WithdrawalActionPayload
+          payload: WithdrawalActionPayload,
+          paymentProof?: File
      ): Promise<WithdrawalActionResponse> {
+          // Use form-data when approving with payment proof
+          if (payload.action === 'approved' && paymentProof) {
+               const formData = new FormData();
+               formData.append('action', payload.action);
+               formData.append('adminResponse', payload.adminResponse);
+               formData.append('paymentProof', paymentProof);
+
+               const response = await apiClient.post<WithdrawalActionResponse>(
+                    `/admin/withdrawals/${withdrawalId}/action`,
+                    formData,
+                    {
+                         headers: {
+                              'Content-Type': 'multipart/form-data',
+                         },
+                    }
+               );
+               return response.data;
+          }
+
+          // Use regular JSON for rejection or approval without payment proof
           const response = await apiClient.post<WithdrawalActionResponse>(
                `/admin/withdrawals/${withdrawalId}/action`,
                payload

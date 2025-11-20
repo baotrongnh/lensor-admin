@@ -129,9 +129,9 @@ export class ProductService {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
         throw new Error(
           `Cannot connect to API at ${url}. Please check:\n` +
-            `1. The API server is running\n` +
-            `2. The endpoint URL is correct\n` +
-            `3. CORS is properly configured`
+          `1. The API server is running\n` +
+          `2. The endpoint URL is correct\n` +
+          `3. CORS is properly configured`
         );
       }
 
@@ -204,5 +204,21 @@ export class ProductService {
       success: deleted === ids.length,
       deleted,
     };
+  }
+
+  /**
+   * Block or unblock product (Admin only)
+   * @param id - Product UUID
+   * @param action - 'block' or 'unblock'
+   */
+  static async blockProduct(
+    id: string,
+    action: 'block' | 'unblock'
+  ): Promise<{ success: boolean; message: string }> {
+    const url = `${API_BASE_URL}/admin/${id}/action`;
+    return this.fetchWithAuth(url, {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    });
   }
 }
