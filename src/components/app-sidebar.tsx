@@ -124,6 +124,18 @@ const data = {
         },
       ],
     },
+    {
+      title: "Settings",
+      url: "#",
+      icon: Settings2,
+      isActive: true,
+      items: [
+        {
+          title: "Platform Settings",
+          url: "/settings",
+        },
+      ],
+    },
   ],
   projects: [
     {
