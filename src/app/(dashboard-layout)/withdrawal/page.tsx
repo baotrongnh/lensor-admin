@@ -176,6 +176,13 @@ export default function WithdrawalManagementPage() {
           });
      };
 
+     const calculateFeePercentage = (amount: string | number, fee: string | number): string => {
+          const amountNum = typeof amount === "string" ? parseFloat(amount) : amount;
+          const feeNum = typeof fee === "string" ? parseFloat(fee) : fee;
+          if (amountNum === 0) return "0.00";
+          return ((feeNum / amountNum) * 100).toFixed(2);
+     };
+
      const getImageUrl = (imagePath: string) => {
           const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://14.169.52.232:3005';
           return `${baseUrl}${imagePath}`;
@@ -319,7 +326,7 @@ export default function WithdrawalManagementPage() {
                                                             <TableHead>Status</TableHead>
                                                             <TableHead>Bank Info</TableHead>
                                                             <TableHead>Amount</TableHead>
-                                                            <TableHead>Fee (17%)</TableHead>
+                                                            <TableHead>Fee</TableHead>
                                                             <TableHead>Actual Amount</TableHead>
                                                             <TableHead>Orders</TableHead>
                                                             <TableHead>Payment Proof</TableHead>
@@ -352,7 +359,10 @@ export default function WithdrawalManagementPage() {
                                                                       {formatCurrency(withdrawal.amount)}
                                                                  </TableCell>
                                                                  <TableCell className="text-red-500">
-                                                                      -{formatCurrency(withdrawal.fee)}
+                                                                      <div className="space-y-1">
+                                                                           <div className="font-semibold">-{formatCurrency(withdrawal.fee)}</div>
+                                                                           <div className="text-xs text-muted-foreground">({calculateFeePercentage(withdrawal.amount, withdrawal.fee)}%)</div>
+                                                                      </div>
                                                                  </TableCell>
                                                                  <TableCell className="font-bold text-green-600">
                                                                       {formatCurrency(withdrawal.actualAmount)}
@@ -849,7 +859,7 @@ export default function WithdrawalManagementPage() {
                                                   <span className="text-base font-semibold">{formatCurrency(detailsWithdrawal.amount)}</span>
                                              </div>
                                              <div className="flex justify-between items-center text-red-600">
-                                                  <span className="text-sm">Withdrawal Fee (17%):</span>
+                                                  <span className="text-sm">Withdrawal Fee ({calculateFeePercentage(detailsWithdrawal.amount, detailsWithdrawal.fee)}%):</span>
                                                   <span className="text-base font-semibold">-{formatCurrency(detailsWithdrawal.fee)}</span>
                                              </div>
                                              <div className="border-t pt-3">
