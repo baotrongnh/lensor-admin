@@ -14,6 +14,7 @@ export const productSchema = z.object({
   reviewCount: z.number().default(0),
   sellCount: z.number().default(0),
   category: z.string(),
+  status: z.enum(["active", "blocked"]).default("active"),
 });
 
 export type Product = z.infer<typeof productSchema>;
@@ -35,6 +36,7 @@ export const apiProductSchema = z.object({
   reviewCount: z.number(),
   sellCount: z.number(),
   category: z.string(),
+  status: z.enum(["active", "blocked"]).default("active"),
 });
 
 export type ApiProduct = z.infer<typeof apiProductSchema>;
@@ -121,5 +123,6 @@ export function transformApiProduct(apiProduct: ApiProduct): Product {
     reviewCount: apiProduct.reviewCount,
     sellCount: apiProduct.sellCount,
     category: apiProduct.category,
+    status: apiProduct.status,
   };
 }

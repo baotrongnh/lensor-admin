@@ -17,6 +17,7 @@ export interface ApiProduct {
   reviewCount: number;
   sellCount: number;
   category: string;
+  status: "active" | "blocked";
 }
 
 export interface ApiProductDetail {

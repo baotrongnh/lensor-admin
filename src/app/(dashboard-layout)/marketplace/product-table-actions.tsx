@@ -88,14 +88,17 @@ export function ProductTableActions({
             View Details
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleBlockProduct} disabled={isBlocking}>
-            <IconBan className="mr-2 size-4" />
-            Block Product
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleUnblockProduct} disabled={isBlocking}>
-            <IconCheck className="mr-2 size-4" />
-            Unblock Product
-          </DropdownMenuItem>
+          {product.status === "active" ? (
+            <DropdownMenuItem onClick={handleBlockProduct} disabled={isBlocking}>
+              <IconBan className="mr-2 size-4" />
+              Block Product
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem onClick={handleUnblockProduct} disabled={isBlocking}>
+              <IconCheck className="mr-2 size-4" />
+              Unblock Product
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={handleDeleteProduct}>
             <IconTrash className="mr-2 size-4" />

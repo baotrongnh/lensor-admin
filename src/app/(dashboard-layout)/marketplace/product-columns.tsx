@@ -73,6 +73,21 @@ export const columns: ColumnDef<Product>[] = [
     },
   },
   {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.original.status;
+      return (
+        <Badge
+          variant={status === "active" ? "default" : "destructive"}
+          className="font-medium"
+        >
+          {status === "active" ? "Active" : "Blocked"}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: "rating",
     header: "Rating",
     cell: ({ row }) => {
