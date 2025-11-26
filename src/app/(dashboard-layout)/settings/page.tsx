@@ -99,10 +99,10 @@ export default function SettingsPage() {
                     // Show success message
                     toast.success(`Discount rate updated to ${newRate}% successfully`)
                }
-          } catch (error: any) {
+          } catch (error) {
                console.error('Error updating discount rate:', error)
-               const errorMessage = error.response?.data?.message || 'Failed to update discount rate'
-               toast.error(errorMessage)
+               const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+               toast.error(message || 'Failed to update discount rate')
           } finally {
                setUpdating(false)
           }
