@@ -45,9 +45,9 @@ export function ProductTableActions({
       await ProductService.blockProduct(product.id, 'block');
       toast.success('Product blocked successfully');
       if (onProductDeleted) onProductDeleted();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error blocking product:', error);
-      toast.error(error.message || 'Failed to block product');
+      toast.error(error instanceof Error ? error.message : 'Failed to block product');
     } finally {
       setIsBlocking(false);
     }
@@ -59,9 +59,9 @@ export function ProductTableActions({
       await ProductService.blockProduct(product.id, 'unblock');
       toast.success('Product unblocked successfully');
       if (onProductDeleted) onProductDeleted();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error unblocking product:', error);
-      toast.error(error.message || 'Failed to unblock product');
+      toast.error(error instanceof Error ? error.message : 'Failed to unblock product');
     } finally {
       setIsBlocking(false);
     }

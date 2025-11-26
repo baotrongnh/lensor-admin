@@ -79,9 +79,9 @@ export default function WithdrawalManagementPage() {
                setLoading(true);
                const response = await withdrawalService.getAllWithdrawals();
                setWithdrawals(response.data);
-          } catch (error: any) {
+          } catch (error) {
                console.error("Error fetching withdrawals:", error);
-               toast.error(error.message || "Failed to fetch withdrawals");
+               toast.error(error instanceof Error ? error.message : "Failed to fetch withdrawals");
           } finally {
                setLoading(false);
           }
@@ -150,9 +150,10 @@ export default function WithdrawalManagementPage() {
                setAdminResponse("");
                setPaymentProof(null);
                fetchWithdrawals();
-          } catch (error: any) {
+          } catch (error) {
                console.error("Error processing withdrawal:", error);
-               toast.error(error.response?.data?.message || "Failed to process withdrawal");
+               const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+               toast.error(message || "Failed to process withdrawal");
           } finally {
                setProcessing(false);
           }
@@ -199,7 +200,7 @@ export default function WithdrawalManagementPage() {
      };
 
      const getStatusBadge = (status: string) => {
-          const config: Record<string, { variant: any; label: string; icon: React.ReactNode; className?: string }> = {
+          const config: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string; icon: React.ReactNode; className?: string }> = {
                pending: {
                     variant: "secondary",
                     label: "Pending",
