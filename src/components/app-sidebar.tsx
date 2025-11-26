@@ -76,19 +76,19 @@ const data = {
       items: [
         {
           title: "User",
-          url: "user",
+          url: "/user",
         },
         {
           title: "Post",
-          url: "post",
+          url: "/post",
         },
         {
           title: "Marketplace",
-          url: "marketplace",
+          url: "/marketplace",
         },
         {
           title: "Withdrawals",
-          url: "withdrawal",
+          url: "/withdrawal",
         },
       ],
     },
@@ -113,10 +113,6 @@ const data = {
         {
           title: "Refund",
           url: "/refund",
-        },
-        {
-          title: "Post",
-          url: "/post",
         },
         {
           title: "Product",
